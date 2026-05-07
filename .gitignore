@@ -216,3 +216,16 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- Athena project-specific ---
+# Allow .env.example to be committed; never commit real .env
+!.env.example
+
+# Local data — gitignored, may grow large
+data/filings/
+data/tearsheets/
+data/local_dd/
+
+# Logs
+logs/
+*.log
