@@ -63,14 +63,12 @@ class AsyncLLMClient:
         anthropic = AsyncAnthropic(
             api_key=settings.anthropic_api_key.get_secret_value()
         )
-        # Direct calls (complete/stream) go through the LangSmith-wrapped client
-        # so they're auto-traced once LANGSMITH_TRACING is enabled.
-        self._raw = wrap_anthropic(anthropic)
-        # Instructor uses Anthropic's streaming API under the hood for structured
-        # outputs. langsmith's wrap_anthropic._text_stream crashes when tracing
-        # is disabled (it writes to a None run_tree). Hand instructor the
-        # unwrapped client to avoid the bug; structured-call tracing will be
-        # added back via @traceable in Phase 3 when we wire LangSmith fully.
+        # langsmith's wrap_anthropic._text_stream writes to a None run_tree when
+        # tracing is disabled, so only wrap when it's actually on. Instructor
+        # uses the streaming API under the hood and hits the same bug — give it
+        # the unwrapped client unconditionally; structured-call tracing returns
+        # via @traceable in Phase 3.
+        self._raw = wrap_anthropic(anthropic) if settings.langsmith_tracing else anthropic
         self._typed = instructor.from_anthropic(anthropic)
 
     @property

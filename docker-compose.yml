@@ -1,6 +1,7 @@
 services:
   postgres_db:
-    image: postgres:16-alpine
+    # Changed from postgres:16-alpine to pgvector/pgvector:pg16-alpine
+    image: pgvector/pgvector:pg16-alpine
     container_name: my_postgres_container
     environment:
       POSTGRES_USER: ${DB_USER:-lkallam}
@@ -10,16 +11,34 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-lkallam} -d ${DB_NAME:-my_database}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     networks:
       - app_network
+
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin_container
     environment:
-      PGADMIN_DEFAULT_EMAIL: kallamlaksh@gmail.com
-      PGADMIN_DEFAULT_PASSWORD: password
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@athena.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
     ports:
       - "5050:80"
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+    networks:
+      - app_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: athena_redis
+    ports:
+      - "6379:6379"
     networks:
       - app_network
 
